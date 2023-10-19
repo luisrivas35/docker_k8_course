@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_HUB_REPO = 'luisrivas35/my-app'
+        KUBE_NAMESPACE = 'test'
+        KUBE_DEPLOYMENT_NAME = 'mypod.yaml'
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                // Checkout code from GitHub repository
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], userRemoteConfigs: [[url: 'https://github.com/luisrivas35/docker_k8_course.git']]])
+            }
+        }
+
+        stage('Dockerize Application') {
+            steps {
+                script {
+                    // Build Docker image
+                    sh 'docker build -t my-app .'
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    // Login to Docker Hub using credentials
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials-id', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
+                        sh "docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD"
+                    }
+
+                    // Push Docker image to Docker Hub
+                    sh "docker push $DOCKER_HUB_REPO:latest"
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    // Apply Kubernetes deployment YAML file
+                    sh "kubectl apply -n $KUBE_NAMESPACE -f $KUBE_DEPLOYMENT_NAME"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully'
+        }
+        failure {
+            echo 'Pipeline failed'
+        }
+    }
+}

@@ -5,21 +5,13 @@ pipeline {
         DOCKER_HUB_REPO = 'luisrivas35/my-app'
         KUBE_NAMESPACE = 'test'
         KUBE_DEPLOYMENT_NAME = 'mypod.yaml'
+        DOCKER_HUB_USERNAME = credentials('docker_hub_creds').username
+        DOCKER_HUB_PASSWORD = credentials('docker_hub_creds').password
+        
     }
 
     stages {
-        // stage('Checkout Code') {
-        //     steps {
-        //         // Initialize workspace as a Git repository
-        //         dir("${WORKSPACE}") {
-        //             sh 'git init'
-        //             sh "git remote add origin ${REPO_URL}"
-        //             sh "git fetch --tags --progress origin +refs/heads/*:refs/remotes/origin/*"
-        //             sh "git checkout -f -q FETCH_HEAD"
-        //         }
-        //     }
-        // }
-
+        
         stage('Dockerize Application') {
             steps {
                 script {
@@ -33,7 +25,7 @@ pipeline {
             steps {
                 script {
                     // Use Jenkins credentials for Docker Hub login
-                    withCredentials([usernamePassword(credentialsId: '7fb69c42-a77e-4cc1-b490-7f183e4233d0', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
+                    withCredentials([usernamePassword(credentialsId: 'docker_hub_creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
                         sh "docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}"
                     }
 

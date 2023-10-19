@@ -5,17 +5,18 @@ pipeline {
         DOCKER_HUB_REPO = 'luisrivas35/my-app'
         KUBE_NAMESPACE = 'test'
         KUBE_DEPLOYMENT_NAME = 'mypod.yaml'
+        REPO_URL = 'https://github.com/luisrivas35/docker_k8_course.git'
     }
 
     stages {
-        stage('Prepare Workspace') {
+        stage('Checkout Code') {
             steps {
-                // Initialize the workspace as a Git repository
+                // Initialize workspace as a Git repository
                 dir("${WORKSPACE}") {
                     sh 'git init'
-                    sh 'git remote add origin https://github.com/luisrivas35/docker_k8_course.git'
-                    sh 'git fetch --tags --progress origin +refs/heads/*:refs/remotes/origin/*'
-                    sh 'git checkout -f -q FETCH_HEAD'
+                    sh "git remote add origin ${REPO_URL}"
+                    sh "git fetch --tags --progress origin +refs/heads/*:refs/remotes/origin/*"
+                    sh "git checkout -f -q FETCH_HEAD"
                 }
             }
         }

@@ -7,7 +7,7 @@ spec:
     app: redis
   ports:
     - protocol: TCP
-      port: 6379 # Redis default port
+      port: 6379
   type: ClusterIP
 
 ---
@@ -52,7 +52,7 @@ kind: Deployment
 metadata:
   name: mypod-deployment
 spec:
-  replicas: 1
+  replicas: 1  # Initial number of replicas
   selector:
     matchLabels:
       app: python
@@ -64,3 +64,24 @@ spec:
       containers:
       - name: mypod
         image: luisrivas35/my-app:latest
+
+---
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mypod-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mypod-deployment
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50  # Target CPU utilization (percentage)

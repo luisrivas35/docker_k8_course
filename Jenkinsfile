@@ -8,10 +8,15 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Prepare Workspace') {
             steps {
-                // Checkout code from GitHub repository
-                checkout([$class: 'GitSCM', branches: [[name: '*/main']], userRemoteConfigs: [[url: 'https://github.com/luisrivas35/docker_k8_course.git']]])
+                // Initialize the workspace as a Git repository
+                dir("${WORKSPACE}") {
+                    sh 'git init'
+                    sh 'git remote add origin https://github.com/luisrivas35/docker_k8_course.git'
+                    sh 'git fetch --tags --progress origin +refs/heads/*:refs/remotes/origin/*'
+                    sh 'git checkout -f -q FETCH_HEAD'
+                }
             }
         }
 

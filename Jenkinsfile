@@ -8,17 +8,17 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Code') {
-            steps {
-                // Initialize workspace as a Git repository
-                dir("${WORKSPACE}") {
-                    sh 'git init'
-                    sh "git remote add origin ${REPO_URL}"
-                    sh "git fetch --tags --progress origin +refs/heads/*:refs/remotes/origin/*"
-                    sh "git checkout -f -q FETCH_HEAD"
-                }
-            }
-        }
+        // stage('Checkout Code') {
+        //     steps {
+        //         // Initialize workspace as a Git repository
+        //         dir("${WORKSPACE}") {
+        //             sh 'git init'
+        //             sh "git remote add origin ${REPO_URL}"
+        //             sh "git fetch --tags --progress origin +refs/heads/*:refs/remotes/origin/*"
+        //             sh "git checkout -f -q FETCH_HEAD"
+        //         }
+        //     }
+        // }
 
         stage('Dockerize Application') {
             steps {

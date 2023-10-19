@@ -5,9 +5,8 @@ pipeline {
         DOCKER_HUB_REPO = 'luisrivas35/my-app'
         KUBE_NAMESPACE = 'test'
         KUBE_DEPLOYMENT_NAME = 'mypod.yaml'
-        DOCKER_HUB_USERNAME = credentials('docker_hub_creds').username
-        DOCKER_HUB_PASSWORD = credentials('docker_hub_creds').password
-        
+        DOCKER_HUB_USERNAME = ''
+        DOCKER_HUB_PASSWORD = ''
     }
 
     stages {
@@ -26,10 +25,13 @@ pipeline {
                 script {
                     // Use Jenkins credentials for Docker Hub login
                     withCredentials([usernamePassword(credentialsId: 'docker_hub_creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
-                        sh "docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}"
+                        // You can't directly assign these values to environment variables
+                        // Assign them to the environment in this block instead
+                        DOCKER_HUB_USERNAME = DOCKER_HUB_USERNAME
+                        DOCKER_HUB_PASSWORD = DOCKER_HUB_PASSWORD
                     }
 
-                    // Push Docker image to Docker Hub
+                    sh "docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD"
                     sh "docker push $DOCKER_HUB_REPO:latest"
                 }
             }
@@ -38,7 +40,6 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Apply Kubernetes deployment YAML file
                     sh "kubectl apply -n $KUBE_NAMESPACE -f $KUBE_DEPLOYMENT_NAME"
                 }
             }

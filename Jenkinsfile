@@ -10,7 +10,15 @@ pipeline {
     }
 
     stages {
-        
+        stage('Cleanup') {
+            steps {
+                script {
+                    // Remove all Docker containers and images
+                    sh 'docker system prune -af'
+                }
+            }
+        }
+
         stage('Dockerize Application') {
             steps {
                 script {
@@ -25,14 +33,11 @@ pipeline {
                 script {
                     // Use Jenkins credentials for Docker Hub login
                     withCredentials([usernamePassword(credentialsId: 'docker_hub_creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
-                        // You can't directly assign these values to environment variables
-                        // Assign them to the environment in this block instead
-                        DOCKER_HUB_USERNAME = DOCKER_HUB_USERNAME
-                        DOCKER_HUB_PASSWORD = DOCKER_HUB_PASSWORD
+                        // Ensure the Docker image is built with the correct tag
+                        sh 'docker build -t my-app .'
+                        sh "docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}"
+                        sh "docker push my-app:latest"
                     }
-
-                    sh "docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD"
-                    sh "docker push $DOCKER_HUB_REPO:latest"
                 }
             }
         }

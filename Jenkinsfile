@@ -13,34 +13,26 @@ pipeline {
         stage('Cleanup') {
             steps {
                 script {
-                    sh 'docker container prune -f'
+                    // Remove only the Docker container with the same name as your app
+                    sh "docker rm -f ${APP_NAME}"  // Remove the container with the name "my-app"
                 }
             }
         }
 
-        stage('Check if Docker image exists') {
+        stage('Build and Push Docker Image') {
             steps {
                 script {
-                    def imageExists = sh(script: "docker images -q ${DOCKER_IMAGE_NAME}:latest", returnStatus: true) == 0
+                    def dockerImageExists = sh(script: "docker images -q ${DOCKER_IMAGE_NAME}:latest", returnStatus: true) == 0
 
-                    if (imageExists) {
-                        echo 'Docker image already exists'
-                    } else {
+                    if (!dockerImageExists) {
                         echo 'Docker image does not exist, building...'
-                        sh 'docker build -t my-app .'
+                        sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
+                    } else {
+                        echo 'Docker image already exists, updating...'
                     }
-                }
-            }
-        }
 
-        stage('Push to Docker Hub') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'docker_hub_creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
-                        sh "docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}"
-                        sh "docker tag my-app:latest ${DOCKER_IMAGE_NAME}:latest"
-                        sh "docker push ${DOCKER_IMAGE_NAME}:latest"
-                    }
+                    // Push the Docker image
+                    sh "docker push ${DOCKER_IMAGE_NAME}:latest"
                 }
             }
         }

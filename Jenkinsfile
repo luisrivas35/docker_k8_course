@@ -2,28 +2,33 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_REPO = 'luisrivas35/my-app'
+        DOCKER_HUB_REPO = 'luisrivas35'
+        APP_NAME = 'my-app'
         KUBE_NAMESPACE = 'test'
         KUBE_DEPLOYMENT_NAME = 'mypod.yaml'
-        DOCKER_HUB_USERNAME = ''
-        DOCKER_HUB_PASSWORD = ''
+        DOCKER_IMAGE_NAME = "${DOCKER_HUB_REPO}/${APP_NAME}"
     }
 
     stages {
         stage('Cleanup') {
             steps {
                 script {
-                    // Remove all Docker containers and images
-                    sh 'docker system prune -af'
+                    sh 'docker container prune -f'
                 }
             }
         }
 
-        stage('Dockerize Application') {
+        stage('Check if Docker image exists') {
             steps {
                 script {
-                    // Build Docker image
-                    sh 'docker build -t my-app .'
+                    def imageExists = sh(script: "docker images -q ${DOCKER_IMAGE_NAME}:latest", returnStatus: true) == 0
+
+                    if (imageExists) {
+                        echo 'Docker image already exists'
+                    } else {
+                        echo 'Docker image does not exist, building...'
+                        sh 'docker build -t my-app .'
+                    }
                 }
             }
         }
@@ -31,12 +36,10 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 script {
-                    // Use Jenkins credentials for Docker Hub login
                     withCredentials([usernamePassword(credentialsId: 'docker_hub_creds', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
-                        // Ensure the Docker image is built with the correct tag
-                        sh 'docker build -t my-app .'
                         sh "docker login -u ${DOCKER_HUB_USERNAME} -p ${DOCKER_HUB_PASSWORD}"
-                        sh "docker push my-app:latest"
+                        sh "docker tag my-app:latest ${DOCKER_IMAGE_NAME}:latest"
+                        sh "docker push ${DOCKER_IMAGE_NAME}:latest"
                     }
                 }
             }

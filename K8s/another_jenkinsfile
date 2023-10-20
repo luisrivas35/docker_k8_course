@@ -1,0 +1,66 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_HUB_REPO = 'luisrivas35/my-app'  // Replace with your Docker Hub repository
+        KUBE_NAMESPACE = 'test'
+        KUBE_DEPLOYMENT_FILE = 'mypod.yaml'  // Specify the full path to the deployment file
+    }
+
+    stages {
+        stage('Cleanup') {
+            steps {
+                script {
+                    // Remove the Docker container with the same name as your app
+                    sh "docker rm -f my-app"
+                }
+            }
+        }
+
+        stage('Install kubectl') {
+            steps {
+                script {
+                    def kubectlInstalled = sh(script: 'kubectl version --client --short', returnStatus: true) == 0
+
+                    if (!kubectlInstalled) {
+                        echo 'kubectl is not installed. Installing...'
+                        sh 'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"'
+                        sh 'chmod +x kubectl'
+                        sh 'sudo mv kubectl /usr/local/bin/'
+                        echo 'kubectl installed successfully.'
+                    } else {
+                        echo 'kubectl is already installed.'
+                    }
+                }
+            }
+        }
+
+        stage('Set kubectl Context') {
+            steps {
+                script {
+                    // Set the kubectl context to your Docker Desktop Kubernetes cluster
+                    sh 'kubectl config use-context docker-desktop'
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    // Apply the Kubernetes deployment to the specified namespace
+                    sh "kubectl apply -n $KUBE_NAMESPACE -f $KUBE_DEPLOYMENT_FILE"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully'
+        }
+        failure {
+            echo 'Pipeline failed'
+        }
+    }
+}
+

@@ -1,23 +1,46 @@
 pipeline {
-    agent any
+    agent {
+        kubernetes {
+            // Specify the label and image for the agent pod
+            label 'my-jenkins-agent'
+            defaultContainer 'jnlp'
+            yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    some-label: some-label-value
+  spec:
+    serviceAccountName: jenkins-sa  # Use the Jenkins service account
+    containers:
+    - name: jnlp
+      image: 'jenkins/inbound-agent:4.3-4'
+      resources:
+        limits:
+          memory: '512Mi'
+          cpu: '500m'
+        requests:
+          memory: '256Mi'
+          cpu: '250m'
+"""
+        }
+    }
 
     environment {
         DOCKER_HUB_REPO = 'luisrivas35'
         APP_NAME = 'my-app'
         KUBE_NAMESPACE = 'test'
         DOCKER_IMAGE_NAME = "${DOCKER_HUB_REPO}/${APP_NAME}"
-        KUBE_DEPLOYMENT_FILE = 'mypod.yaml'  // Specify the full path to the deployment file
+        KUBE_DEPLOYMENT_FILE = 'mypod.yaml'
     }
 
     stages {
         stage('Install kubectl') {
             steps {
                 script {
-                    // Check if kubectl is installed
                     def kubectlInstalled = sh(script: 'kubectl version --client --short', returnStatus: true) == 0
 
                     if (!kubectlInstalled) {
-                        // Install kubectl if it's not already installed
                         echo 'kubectl is not installed. Installing...'
                         sh 'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"'
                         sh 'chmod +x kubectl'
@@ -30,11 +53,18 @@ pipeline {
             }
         }
 
+        stage('Set kubectl Context') {
+            steps {
+                script {
+                    sh 'kubectl config use-context docker-desktop'
+                }
+            }
+        }
+
         stage('Cleanup') {
             steps {
                 script {
-                    // Remove only the Docker container with the same name as your app
-                    sh "docker rm -f ${APP_NAME}"  // Remove the container with the name "my-app"
+                    sh "docker rm -f ${APP_NAME}"
                 }
             }
         }
@@ -44,16 +74,9 @@ pipeline {
                 script {
                     def imageExists = sh(script: "docker images -q ${DOCKER_IMAGE_NAME}:latest", returnStatus: true) == 0
 
-                    // Build the Docker image
                     sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
-
-                    // Push the Docker image
                     sh "docker push ${DOCKER_IMAGE_NAME}:latest"
-
-                    // Remove any previous containers (if any)
                     sh "docker rm -f ${APP_NAME}" 
-
-                    // Start the Docker container
                     sh "docker run -d --name ${APP_NAME} ${DOCKER_IMAGE_NAME}:latest"
                 }
             }
@@ -62,10 +85,6 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Ensure kubectl is configured with the correct context and credentials.
-                    // kubectl should be installed and configured on the Jenkins server.
-
-                    // Apply the Kubernetes deployment to the specified namespace
                     sh "kubectl apply -n $KUBE_NAMESPACE -f $KUBE_DEPLOYMENT_FILE"
                 }
             }

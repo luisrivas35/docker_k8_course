@@ -5,8 +5,8 @@ pipeline {
         DOCKER_HUB_REPO = 'luisrivas35'
         APP_NAME = 'my-app'
         KUBE_NAMESPACE = 'test'
-        KUBE_DEPLOYMENT_NAME = 'mypod.yaml'
         DOCKER_IMAGE_NAME = "${DOCKER_HUB_REPO}/${APP_NAME}"
+        KUBE_DEPLOYMENT_FILE = 'mypod.yaml'  // Specify the full path to the deployment file
     }
 
     stages {
@@ -22,17 +22,19 @@ pipeline {
         stage('Build and Push Docker Image') {
             steps {
                 script {
-                    def dockerImageExists = sh(script: "docker images -q ${DOCKER_IMAGE_NAME}:latest", returnStatus: true) == 0
+                    def imageExists = sh(script: "docker images -q ${DOCKER_IMAGE_NAME}:latest", returnStatus: true) == 0
 
-                    if (!dockerImageExists) {
-                        echo 'Docker image does not exist, building...'
-                        sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
-                    } else {
-                        echo 'Docker image already exists, updating...'
-                    }
+                    // Build the Docker image
+                    sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
 
                     // Push the Docker image
                     sh "docker push ${DOCKER_IMAGE_NAME}:latest"
+
+                    // Remove any previous containers (if any)
+                    sh "docker rm -f ${APP_NAME}" 
+
+                    // Start the Docker container
+                    sh "docker run -d --name ${APP_NAME} ${DOCKER_IMAGE_NAME}:latest"
                 }
             }
         }
@@ -40,7 +42,8 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    sh "kubectl apply -n $KUBE_NAMESPACE -f $KUBE_DEPLOYMENT_NAME"
+                    // Apply the Kubernetes deployment to the specified namespace
+                    sh "kubectl apply -n $KUBE_NAMESPACE -f $KUBE_DEPLOYMENT_FILE"
                 }
             }
         }

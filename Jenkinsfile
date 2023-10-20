@@ -21,7 +21,7 @@ pipeline {
                         echo 'kubectl is not installed. Installing...'
                         sh 'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"'
                         sh 'chmod +x kubectl'
-                        sh 'sudo mv kubectl /usr/local/bin/'
+                        sh "mv kubectl /usr/local/bin/"
                         echo 'kubectl installed successfully.'
                     } else {
                         echo 'kubectl is already installed.'

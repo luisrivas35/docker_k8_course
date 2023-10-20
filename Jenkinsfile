@@ -11,8 +11,11 @@ pipeline {
         stage('Cleanup') {
             steps {
                 script {
-                    // Remove only the Docker container with the same name as your app
+                    // Remove the Docker container with the same name as your app
                     sh "docker rm -f ${APP_NAME}"  // Remove the container with the name "my-app"
+
+                    // Remove the Docker image
+                    sh "docker rmi -f ${DOCKER_IMAGE_NAME}:latest"
                 }
             }
         }
@@ -29,10 +32,7 @@ pipeline {
                     sh "docker push ${DOCKER_IMAGE_NAME}:latest"
 
                     // Remove any previous containers (if any)
-                    sh "docker rm -f ${APP_NAME}" 
-
-                    // Start the Docker container (if needed)
-                    //sh "docker run -d --name ${APP_NAME} ${DOCKER_IMAGE_NAME}:latest"
+                    sh "docker rm -f ${APP_NAME}"
                 }
             }
         }

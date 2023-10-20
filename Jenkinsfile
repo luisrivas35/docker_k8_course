@@ -10,6 +10,26 @@ pipeline {
     }
 
     stages {
+        stage('Install kubectl') {
+            steps {
+                script {
+                    // Check if kubectl is installed
+                    def kubectlInstalled = sh(script: 'kubectl version --client --short', returnStatus: true) == 0
+
+                    if (!kubectlInstalled) {
+                        // Install kubectl if it's not already installed
+                        echo 'kubectl is not installed. Installing...'
+                        sh 'curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"'
+                        sh 'chmod +x kubectl'
+                        sh 'sudo mv kubectl /usr/local/bin/'
+                        echo 'kubectl installed successfully.'
+                    } else {
+                        echo 'kubectl is already installed.'
+                    }
+                }
+            }
+        }
+
         stage('Cleanup') {
             steps {
                 script {
@@ -42,6 +62,9 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
+                    // Ensure kubectl is configured with the correct context and credentials.
+                    // kubectl should be installed and configured on the Jenkins server.
+
                     // Apply the Kubernetes deployment to the specified namespace
                     sh "kubectl apply -n $KUBE_NAMESPACE -f $KUBE_DEPLOYMENT_FILE"
                 }

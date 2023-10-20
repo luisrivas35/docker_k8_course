@@ -32,7 +32,7 @@ pipeline {
                     sh "docker rm -f ${APP_NAME}" 
 
                     // Start the Docker container (if needed)
-                    sh "docker run -d --name ${APP_NAME} ${DOCKER_IMAGE_NAME}:latest"
+                    //sh "docker run -d --name ${APP_NAME} ${DOCKER_IMAGE_NAME}:latest"
                 }
             }
         }

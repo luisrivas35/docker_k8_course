@@ -28,8 +28,12 @@ pipeline {
                     // Build the Docker image
                     sh "docker build -t ${DOCKER_IMAGE_NAME}:latest ."
 
-                    // Push the Docker image
-                    sh "docker push ${DOCKER_IMAGE_NAME}:latest"
+                    // Log in to Docker Hub using Jenkins credentials binding
+                    withCredentials([usernamePassword(credentialsId: 'docker_hub_creds', usernameVariable: 'DOCKER_HUB_USER', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
+                        sh "docker login -u $DOCKER_HUB_USER -p $DOCKER_HUB_PASSWORD"
+                        // Push the Docker image
+                        sh "docker push ${DOCKER_IMAGE_NAME}:latest"
+                    }
 
                     // Remove any previous containers (if any)
                     sh "docker rm -f ${APP_NAME}"

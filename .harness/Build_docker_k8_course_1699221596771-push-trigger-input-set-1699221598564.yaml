@@ -1,0 +1,14 @@
+inputSet:
+  name: Build_docker_k8_course_1699221596771-push-trigger-input-set
+  identifier: Build_docker_k8_course_1699221596771pushtriggerinputset
+  orgIdentifier: default
+  projectIdentifier: default_project
+  pipeline:
+    identifier: Build_docker_k8_course_1699221596771
+    properties:
+      ci:
+        codebase:
+          build:
+            type: branch
+            spec:
+              branch: <+trigger.branch>
